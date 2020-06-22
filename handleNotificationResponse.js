@@ -8,11 +8,15 @@ module.exports = function(processResult) {
         sourceStream.on(`error`, (error) => {
             emitter.emit(`error`, error);
         });
+        let totalRecords = 0;
+        let insertedRecords = 0;
         oboe(sourceStream)
             .node(`!notifications.totalRecords`, (data) => {
+                totalRecords = parseInt(data, 10);
                 emitter.emit(`totalRecords`, data);
             })
             .node(`!notifications.inserted.*`, (data) => {
+                insertedRecords += parseInt(data, 10);
                 emitter.emit(`inserted`, data);
             })
             .node(`!result`, async (data) => {
@@ -25,7 +29,7 @@ module.exports = function(processResult) {
                 emitter.emit(`error`, data);
             })
             .done(() => {
-                if (isFinished === false) {
+                if (isFinished === false || insertedRecords !== totalRecords) {
                     emitter.emit(
                         `error`,
                         new Error(
