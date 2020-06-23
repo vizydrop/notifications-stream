@@ -20,16 +20,19 @@ module.exports = function(processResult) {
                 emitter.emit(`inserted`, data);
             })
             .node(`!result`, async (data) => {
-                isFinished = true;
-                const res = await processResult(data);
-                emitter.emit(`result`, res);
+                const isUnknownTotal = isNaN(totalRecords);
+                if (isUnknownTotal || totalRecords === insertedRecords) {
+                    isFinished = true;
+                    const res = await processResult(data);
+                    emitter.emit(`result`, res);
+                }
             })
             .node(`!error`, (data) => {
                 isFinished = true;
                 emitter.emit(`error`, data);
             })
             .done(() => {
-                if (isFinished === false || insertedRecords !== totalRecords) {
+                if (isFinished === false) {
                     emitter.emit(
                         `error`,
                         new Error(
